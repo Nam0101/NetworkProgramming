@@ -6,28 +6,26 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+
 #define file_name "htmlSaver.txt"
 #define link_file "links.csv"
 #define text_file "text.csv"
 #define video_file "video.csv"
-
 #define MAX_URL_LENGTH 2048
 
-//write to file from url for reading
+// write to file from url for reading
 void write2File(const char *url)
 {
     CURL *curlHandle = curl_easy_init();
-
     curl_easy_setopt(curlHandle, CURLOPT_URL, url);
     FILE *file = fopen(file_name, "w+");
-
     curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, file);
     curl_easy_perform(curlHandle);
     fclose(file);
     curl_easy_cleanup(curlHandle);
 }
 
-//get full url from input
+// get full url from input
 char *getFullUrl(const char *url)
 {
     char *fullUrl = malloc(strlen(url) + strlen("https://") + 1);
@@ -151,22 +149,50 @@ int cmp(char *a, char *b)
     return 0;
 }
 
-// sort list of links
-void sort(char **links, int num_links)
+// sort list of links using merge sort
+void sort(char **links, int n)
 {
-    for (int i = 0; i < num_links - 1; i++)
+    if (n <= 1)
     {
-        for (int j = i + 1; j < num_links; j++)
+        return;
+    }
+    int mid = n / 2;
+    char **left = malloc(mid * sizeof(char *));
+    char **right = malloc((n - mid) * sizeof(char *));
+    for (int i = 0; i < mid; i++)
+    {
+        left[i] = links[i];
+    }
+    for (int i = mid; i < n; i++)
+    {
+        right[i - mid] = links[i];
+    }
+    sort(left, mid);
+    sort(right, n - mid);
+    int i = 0, j = 0, k = 0;
+    while (i < mid && j < n - mid)
+    {
+        if (cmp(left[i], right[j]) == -1)
         {
-            if (cmp(links[i], links[j]) == 1)
-            {
-                char *temp = links[i];
-                links[i] = links[j];
-                links[j] = temp;
-            }
+            links[k++] = left[i++];
+        }
+        else
+        {
+            links[k++] = right[j++];
         }
     }
+    while (i < mid)
+    {
+        links[k++] = left[i++];
+    }
+    while (j < n - mid)
+    {
+        links[k++] = right[j++];
+    }
+    free(left);
+    free(right);
 }
+
 // Check if a string is a valid IP address or not
 int isIpAddress(char *hostnameOrIp)
 {
@@ -235,7 +261,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        printf("Usage: %s <url>\n", argv[0]);
+        printf("Usage: %s <URL|IP address>\n", argv[0]);
         return 1;
     }
     char *hostnameOrIp = argv[1];
@@ -248,7 +274,8 @@ int main(int argc, char *argv[])
         printHostInfo(host);
         fullUrl = getFullUrl(host->h_name);
     }
-    else{
+    else
+    {
         host = gethostbyname(hostnameOrIp);
         printIPAddresses(host);
         fullUrl = getFullUrl(hostnameOrIp);

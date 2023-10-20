@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "regex.h": "c"
+        "regex.h": "c",
+        "md5.h": "c",
+        "sha.h": "c"
     }
 }

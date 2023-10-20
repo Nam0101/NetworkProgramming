@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     int client_sock;
     char buff[BUFF_SIZE];
     struct sockaddr_in server_addr;
-    int bytes_sent, bytes_received;
+    int bytes_sent;
     socklen_t sin_size;
     char *ip_address;
     int port_number;
@@ -44,29 +44,17 @@ int main(int argc, char *argv[])
 
     // Step 3: Communicate with server
     socklen_t server_addr_len = sizeof(server_addr);
-    sendto(client_sock, "C2", strlen("C2"), 0, (const struct sockaddr *)&server_addr, server_addr_len);
+    sendto(client_sock, "Client2", strlen("Client2"), 0, (const struct sockaddr *)&server_addr, server_addr_len);
     while(1){
-        bytes_received = recvfrom(client_sock, buff, BUFF_SIZE - 1, 0, (struct sockaddr *)&server_addr, &sin_size);
-        if (bytes_received < 0)
+        bytes_sent = recvfrom(client_sock, buff, BUFF_SIZE - 1, 0, (struct sockaddr *)&server_addr, &sin_size);
+        if (bytes_sent < 0)
         {
             perror("Error: ");
             close(client_sock);
             return 0;
         }
-        buff[bytes_received] = '\0';
-        printf("Alphabetic characters: %s\n", buff);
-
-        // Receive the result from the server
-        bytes_received = recvfrom(client_sock, buff, BUFF_SIZE - 1, 0, (struct sockaddr *)&server_addr, &sin_size);
-        if (bytes_received < 0)
-        {
-            perror("Error: ");
-            close(client_sock);
-            return 0;
-        }
-        buff[bytes_received] = '\0';
-
-        printf("Numeric characters: %s\n", buff);
+        buff[bytes_sent] = '\0';
+        printf("Server message: %s\n", buff);
     }
     close(client_sock);
 }

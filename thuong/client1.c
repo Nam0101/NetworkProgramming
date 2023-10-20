@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     int client_sock;
     char buff[BUFF_SIZE];
     struct sockaddr_in server_addr;
-    int bytes_sent, bytes_received;
+    int bytes_sent;
     socklen_t sin_size;
     char *ip_address;
     int port_number;
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     // Step 3: Communicate with server
     while (1)
     {
-        printf("\nInsert string to send: ");
+        printf("Enter message to send: ");
         memset(buff, '\0', (strlen(buff) + 1));
         fgets(buff, BUFF_SIZE, stdin);
 
@@ -68,7 +68,6 @@ int main(int argc, char *argv[])
             return 0;
         }
 
-        
     }
 
     close(client_sock);

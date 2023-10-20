@@ -12,13 +12,18 @@ CC = gcc
 # Các cờ biên dịch
 CFLAGS = -Wall
 
+LDFLAGS_CLIENT = -lpthread
+LDFLAGS_SERVER1 = -lssl
+LDFLAGS_SERVER2 = -lcrypto
+
+
 all: $(TARGET_CLIENT) $(TARGET_SERVER)
 
 $(TARGET_CLIENT): $(SOURCES_CLIENT)
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS_CLIENT)
 
 $(TARGET_SERVER): $(SOURCES_SERVER)
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<  $(LDFLAGS_SERVER1) $(LDFLAGS_SERVER2)
 
 clean:
 	rm -f $(TARGET_CLIENT) $(TARGET_SERVER)

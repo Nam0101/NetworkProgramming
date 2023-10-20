@@ -104,6 +104,16 @@ char* charInMD5(const char* str){
     return character;
 }
 
+int isValidString(const char* str){
+    // trả về true nếu str chỉ chứa kí tự từ a-z,A-Z và số từ 0-9, ngược lại trả về false
+    for (int i = 0; i < strlen(str)-1; i++){
+        if (!((str[i] >= 'a' && str[i] <= 'z') || (str[i] >= '0' && str[i] <= '9') || (str[i] >= 'A' && str[i] <= 'Z'))){
+            return 0;
+        }
+    }
+    return 1;
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -171,6 +181,10 @@ int main(int argc, char *argv[])
                 close(sockfd);
                 exit(1);
             }
+            if(!isValidString(buffer)){
+                printf("Invalid string\n");
+                continue;
+            }
             char *hash = str2md5(buffer, strlen(buffer));
             char *digit = digitInMD5(hash);
             char *character = charInMD5(hash);
@@ -186,6 +200,9 @@ int main(int argc, char *argv[])
                 sendto(sockfd, digit, strlen(digit), 0, (const struct sockaddr *)&client_addr1, client_addr_len);
                 sendto(sockfd, character, strlen(character), 0, (const struct sockaddr *)&client_addr1, client_addr_len);
             }
+            free(hash);
+            free(digit);
+            free(character);
         }
         memset(buffer, 0, sizeof(buffer));
     }

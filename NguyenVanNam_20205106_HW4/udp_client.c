@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
-    char *message = "Hello from client\n";
+    char *message = "NguyenVanNam_20205106";
     sendto(sockfd, message, strlen(message), 0, (const struct sockaddr *)&server_addr, sizeof(server_addr));
 
     pthread_t send_thread;

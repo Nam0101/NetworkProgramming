@@ -8,6 +8,7 @@
 #include <pthread.h>
 #define MAX_BUFFER_SIZE 1024
 
+// create socket
 int create_socket()
 {
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -19,6 +20,7 @@ int create_socket()
     return sockfd;
 }
 
+// create server address
 struct sockaddr_in create_server_addr(int PORT)
 {
     struct sockaddr_in server_addr;
@@ -29,6 +31,8 @@ struct sockaddr_in create_server_addr(int PORT)
     return server_addr;
 }
 
+
+// bind socket to server address and port
 void bind_socket(int sockfd, struct sockaddr_in server_addr)
 {
     if (bind(sockfd, (const struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
@@ -39,6 +43,7 @@ void bind_socket(int sockfd, struct sockaddr_in server_addr)
     }
 }
 
+// return string hashed by MD5
 char *str2md5(const char *str, int length)
 {
     int n;
@@ -72,9 +77,8 @@ char *str2md5(const char *str, int length)
     return out;
 }
 
-
+// return string contains only digit in string hashed by MD5
 char* digitInMD5(const char*str){
-    //return string contains only digit in MD5 of str
     char* digit = (char*)malloc(33);
     int j = 0;
     for (int i = 0; i < strlen(str); i++)
@@ -89,8 +93,8 @@ char* digitInMD5(const char*str){
     return digit;
 }
 
+// return string contains only character in string hashed by MD5
 char* charInMD5(const char* str){
-    //return string contains only character in MD5 of str
     char* character = (char*)malloc(33);
     int j = 0;
     for (int i = 0; i < strlen(str); i++){
@@ -104,8 +108,9 @@ char* charInMD5(const char* str){
     return character;
 }
 
+
+// check if string contains only character and digit
 int isValidString(const char* str){
-    // trả về true nếu str chỉ chứa kí tự từ a-z,A-Z và số từ 0-9, ngược lại trả về false
     for (int i = 0; i < strlen(str)-1; i++){
         if (!((str[i] >= 'a' && str[i] <= 'z') || (str[i] >= '0' && str[i] <= '9') || (str[i] >= 'A' && str[i] <= 'Z'))){
             return 0;

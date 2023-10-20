@@ -9,9 +9,12 @@
 
 #define MAX_BUFFER_SIZE 2048
 
+// socket file descriptor
 int sockfd;
+// server address
 struct sockaddr_in server_addr;
 
+// receive message from server
 void *receive_message(void *arg)
 {
     char buffer[MAX_BUFFER_SIZE];
@@ -29,7 +32,7 @@ void *receive_message(void *arg)
         printf("Reply from server: %s\n", buffer);
     }
 }
-
+// send message to server
 void *send_message(void *arg)
 {
     char message[MAX_BUFFER_SIZE];
@@ -67,7 +70,7 @@ int main(int argc, char *argv[])
         close(sockfd);
         exit(1);
     }
-
+    // get connect to server
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
@@ -76,9 +79,11 @@ int main(int argc, char *argv[])
     char *message = "NguyenVanNam_20205106";
     sendto(sockfd, message, strlen(message), 0, (const struct sockaddr *)&server_addr, sizeof(server_addr));
 
+    // create 2 thread to send and receive message
     pthread_t send_thread;
     pthread_t receive_thread;
 
+    // create thread
     pthread_create(&send_thread, NULL, send_message, NULL);
     pthread_create(&receive_thread, NULL, receive_message, NULL);
 

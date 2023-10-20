@@ -6,12 +6,24 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdlib.h>
-#define SERV_PORT 5550
-#define SERV_IP "127.0.0.1"
+
 #define BUFF_SIZE 1024
 
-int main()
+int main(int argc, char *argv[])
 {
+    int SERV_PORT;
+    char *SERV_IP;
+
+    if (argc != 3)
+    {
+        printf("Usage: %s IP PortNumber\n", argv[0]);
+        exit(1);
+    }
+    else
+    {
+        SERV_IP = argv[1];
+        SERV_PORT = atoi(argv[2]);
+    }
     int client_sock;
     char buff[BUFF_SIZE];
     struct sockaddr_in server_addr;

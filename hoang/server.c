@@ -8,18 +8,24 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <openssl/sha.h>
-#define PORT 5550 /* Port that will be opened */
 #define BUFF_SIZE 1024
 
-int main()
-{
-
+int main(int argc, char *argv[])
+{  
+    int PORT;
+    if(argc != 2){
+        printf("Usage: %s PortNumber\n", argv[0]);
+        exit(1);
+    }
+    else{
+        PORT = atoi(argv[1]);
+    }
     int server_sock; /* file descriptors */
     char buff[BUFF_SIZE];
     int bytes_sent, bytes_received;
     struct sockaddr_in server;                       /* server's address information */
     struct sockaddr_in client1, client2, tempclient; /* client's address information */
-    socklen_t sin_size = sizeof(struct sockaddr_in);
+    socklen_t sin_size;
 
     // Step 1: Construct a UDP socket
     if ((server_sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)

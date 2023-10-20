@@ -6,16 +6,28 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdlib.h>
-#define SERV_PORT 5550
-#define SERV_IP "127.0.0.1"
 #define BUFF_SIZE 1024
 
-int main()
+int main(int argc, char *argv[])
 {
+    int SERV_PORT;
+    char *SERV_IP;
+
+    if (argc != 3)
+    {
+        printf("Usage: %s IP PortNumber\n", argv[0]);
+        exit(1);
+    }
+    else
+    {
+        SERV_IP = argv[1];
+        SERV_PORT = atoi(argv[2]);
+    }
     int client_sock;
     char buff[BUFF_SIZE];
     struct sockaddr_in server_addr;
-    int bytes_sent, bytes_received, sin_size;
+    int bytes_sent, bytes_received;
+    socklen_t sin_size = sizeof(struct sockaddr);
 
     // Step 1: Construct a UDP socket
     if ((client_sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -50,9 +62,7 @@ int main()
         buff[bytes_received] = '\0';
         printf("Reply from server: %s\n", buff);
     }
-    
-    
-    
+
     close(client_sock);
     return 0;
 }

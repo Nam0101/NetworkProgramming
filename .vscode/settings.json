@@ -2,6 +2,7 @@
     "files.associations": {
         "regex.h": "c",
         "md5.h": "c",
-        "sha.h": "c"
+        "sha.h": "c",
+        "stdlib.h": "c"
     }
 }

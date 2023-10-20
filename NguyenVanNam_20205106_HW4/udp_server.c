@@ -75,12 +75,13 @@ char *str2md5(const char *str, int length)
 
 char* digitInMD5(const char*str){
     //return string contains only digit in MD5 of str
-    char* md5 = str2md5(str, strlen(str));
     char* digit = (char*)malloc(33);
     int j = 0;
-    for (int i = 0; i < strlen(md5); i++){
-        if (md5[i] >= '0' && md5[i] <= '9'){
-            digit[j] = md5[i];
+    for (int i = 0; i < strlen(str); i++)
+    {
+        if (str[i] >= '0' && str[i] <= '9')
+        {
+            digit[j] = str[i];
             j++;
         }
     }
@@ -90,12 +91,12 @@ char* digitInMD5(const char*str){
 
 char* charInMD5(const char* str){
     //return string contains only character in MD5 of str
-    char* md5 = str2md5(str, strlen(str));
     char* character = (char*)malloc(33);
     int j = 0;
-    for (int i = 0; i < strlen(md5); i++){
-        if (md5[i] >= 'a' && md5[i] <= 'z'){
-            character[j] = md5[i];
+    for (int i = 0; i < strlen(str); i++){
+        if (str[i] >= 'a' && str[i] <= 'z')
+        {
+            character[j] = str[i];
             j++;
         }
     }
@@ -162,6 +163,7 @@ int main(int argc, char *argv[])
 
         if (client1_set && client2_set)
         {
+            memset(buffer, 0, sizeof(buffer));
             bytes_received = recvfrom(sockfd, (char *)buffer, MAX_BUFFER_SIZE, 0, (struct sockaddr *)&temp_addr, &temp_addr_len);
             if (bytes_received < 0)
             {
@@ -184,8 +186,8 @@ int main(int argc, char *argv[])
                 sendto(sockfd, digit, strlen(digit), 0, (const struct sockaddr *)&client_addr1, client_addr_len);
                 sendto(sockfd, character, strlen(character), 0, (const struct sockaddr *)&client_addr1, client_addr_len);
             }
-            memset(buffer, 0, sizeof(buffer));
         }
+        memset(buffer, 0, sizeof(buffer));
     }
 
     close(sockfd);

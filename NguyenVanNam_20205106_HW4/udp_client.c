@@ -73,9 +73,7 @@ int main(int argc, char *argv[])
     server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
-    printf("Type any thing to connect to server: ");
-    char message[MAX_BUFFER_SIZE];
-    fgets(message, sizeof(message), stdin);
+    char *message = "Hello from client\n";
     sendto(sockfd, message, strlen(message), 0, (const struct sockaddr *)&server_addr, sizeof(server_addr));
 
     pthread_t send_thread;

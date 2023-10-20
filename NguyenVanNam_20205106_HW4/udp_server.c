@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
             if (bytes_received >= 0)
             {
                 client1_set = 1;
-                buff
+                buffer[bytes_received] = '\0';
                 printf("Received message from client 1: %s\n", buffer);
                 printf("Client 1 address: %s\n", inet_ntoa(client_addr.sin_addr));
                 printf("Client 1 port: %d\n", ntohs(client_addr.sin_port));

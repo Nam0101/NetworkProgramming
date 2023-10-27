@@ -31,7 +31,10 @@ void receive_message(char *message)
     strcpy(message, buffer);
 }
 
-// send message to server
+// login to server, send username and password to server
+// if username and password is correct, server will send "OK" to client
+// else server will send "not OK" to client
+// try 3 times to login
 void login()
 {
     char message[MAX_BUFFER_SIZE];
@@ -50,6 +53,7 @@ void login()
     if (strcmp(message, "not OK") == 0)
     {
         int numTry = 1;
+        // try 3 times to login
         while (numTry < 3)
         {
             memset(message, 0, sizeof(char)*MAX_BUFFER_SIZE);
@@ -58,6 +62,7 @@ void login()
             sendto(sockfd, message, strlen(message), 0, (const struct sockaddr *)&server_addr, sizeof(server_addr));
             receive_message(message);
             printf("%s\n", message);
+            // if login success, server will send "OK" to client 
             if (strcmp(message, "OK") == 0)
             {
                 isLogin = 1;
@@ -69,6 +74,7 @@ void login()
             }
             numTry++;
         }
+        // if login fail after 3 times, server will send "account not ready" or "block account" to client
         if (numTry == 3)
         {
             receive_message(message);
@@ -76,6 +82,7 @@ void login()
             return;
         }
     }
+    // if login success, server will send "OK" to client
     else if(strcmp(message, "OK") == 0){
         isLogin = 1;
         return;
@@ -111,6 +118,8 @@ int main(int argc, char *argv[])
     server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
     login();
+    // if login success, client can change password
+    // receive message from server
     while(isLogin){
         printf("Insert new password:\n");
         fgets(message, sizeof(message), stdin);

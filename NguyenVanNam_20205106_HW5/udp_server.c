@@ -14,11 +14,16 @@
 #define notLogedIn 0
 const char *dataFileName = "account.txt";
 int isLogin = 0;
+// define a list to store account
 list_t *list;
+// define a node to store loged in account
 node_t *logedInAccount;
+// server address
 struct sockaddr_in server_addr, client_addr;
 socklen_t client_addr_len;
 int sockfd;
+
+// create a UDP socket
 int create_socket()
 {
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -51,6 +56,8 @@ void bind_socket(int sockfd, struct sockaddr_in server_addr)
         exit(1);
     }
 }
+
+// read file and store data to message
 void receive_message(char *message)
 {
     char buffer[MAX_BUFFER_SIZE];
@@ -64,6 +71,8 @@ void receive_message(char *message)
     buffer[bytes_received - 1] = '\0';
     strcpy(message, buffer);
 }
+
+// write data from list to file
 void writeFile(list_t *list, const char *fileName)
 {
     FILE *fp = fopen(fileName, "w");
@@ -80,6 +89,8 @@ void writeFile(list_t *list, const char *fileName)
     }
     fclose(fp);
 }
+
+// return node_t that has userName and password
 node_t *findInList(list_t *list, char *userName, char *password, int *isFound)
 {
     node_t *cur = list->head;
@@ -94,6 +105,8 @@ node_t *findInList(list_t *list, char *userName, char *password, int *isFound)
     }
     return cur;
 }
+
+// return node_t that has userName
 node_t *findByUserName(list_t *list, char *userName)
 {
     node_t *cur = list->head;
@@ -107,7 +120,7 @@ node_t *findByUserName(list_t *list, char *userName)
     }
     return NULL;
 }
-
+// case if can found an account
 void foundedAccount(node_t *account)
 {
     if (account->status == ACTIVE)
@@ -121,7 +134,7 @@ void foundedAccount(node_t *account)
     char *message = "account not ready";
     sendto(sockfd, (const char *)message, strlen(message), 0, (const struct sockaddr *)&client_addr, client_addr_len);
 }
-
+// case if password is wrong
 void passwordWrong(char *userName)
 {
     char *message = "not OK";
@@ -130,6 +143,7 @@ void passwordWrong(char *userName)
 
     node_t *account = findByUserName(list, userName);
     int numTry = 1;
+    // try 3 times to login
     while (numTry < 3)
     {
         char *buffer = (char *)malloc(MAX_BUFFER_SIZE);
@@ -155,6 +169,7 @@ void passwordWrong(char *userName)
             numTry++;
         }
     }
+    // if login fail after 3 times, server will send or "block account" to client
     if (numTry == 3)
     {
         char *message = "block account";
@@ -168,6 +183,7 @@ void passwordWrong(char *userName)
     }
     return;
 }
+// if not login, then handle it
 void notLoginHandle(list_t *list)
 {
     char *buffer = (char *)malloc(MAX_BUFFER_SIZE);
@@ -181,10 +197,12 @@ void notLoginHandle(list_t *list)
     node_t *account = findInList(list, userName, password, &isFound);
     if (isFound)
     {
+        // if account is found, then check status of account
         foundedAccount(account);
     }
     else
     {
+        // if account is not found, then check password
         passwordWrong(userName);
     }
 }
@@ -203,7 +221,7 @@ int isValidPassword(char *password)
     }
     return 1;
 }
-
+// hash password by sha256 and return hashed password
 char *SHA256Hashing(char *password)
 {
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -220,7 +238,7 @@ char *SHA256Hashing(char *password)
     output[64] = '\0';
     return output;
 }
-
+// return digit in string
 char *digitInString(char *str)
 {
     int i = 0;
@@ -238,7 +256,7 @@ char *digitInString(char *str)
     digit[j] = '\0';
     return digit;
 }
-
+// return character in string
 char *charInString(char *str)
 {
     int i = 0;
@@ -256,11 +274,12 @@ char *charInString(char *str)
     character[j] = '\0';
     return character;
 }
-
+// if login, then handle it
 void logedInHandle(list_t *list)
 {
     char *buffer = (char *)malloc(MAX_BUFFER_SIZE);
     receive_message(buffer);
+    // if client send "bye", then server will send "Goodbye <username>" to client
     if (strcmp(buffer, "bye") == 0)
     {
         isLogin = 0;
@@ -272,6 +291,7 @@ void logedInHandle(list_t *list)
         sendto(sockfd, (const char *)send_message, strlen(send_message), 0, (const struct sockaddr *)&client_addr, client_addr_len);
         return;
     }
+    // receive new password from client, then hash it and store it to account and send digit and character to client
     if (isValidPassword(buffer))
     {
         char *hashedPassword = SHA256Hashing(buffer);
@@ -312,6 +332,7 @@ int main(int argc, char *argv[])
 
     printf("UDP server is listening on port %d...\n", PORT);
     memset(buffer, 0, sizeof(buffer));
+    // server will run forever until client send "bye"
     while (1)
     {
         if (!isLogin)

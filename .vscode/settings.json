@@ -4,6 +4,7 @@
         "md5.h": "c",
         "sha.h": "c",
         "stdlib.h": "c",
-        "functional": "c"
+        "functional": "c",
+        "unistd.h": "c"
     }
 }

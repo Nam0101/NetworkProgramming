@@ -7,6 +7,7 @@
 #include <string.h>
 #define ERROR "Error Invalid String"
 #define BUFF_SIZE 8192
+#define END1 "END1#"
 #define FILENAME "image.jpg"
 void printMenu()
 {
@@ -24,7 +25,7 @@ void sendMessage(int client_sock, char *buff, int msg_len)
         printf("\nConnection closed!\n");
         return;
     }
-    // printf("Sent: %d\n", bytes_sent);
+    printf("Sent: %d\n", bytes_sent);
 }
 void receiveMessage(int client_sock, char *buff, int msg_len)
 {
@@ -56,6 +57,9 @@ void sendFile(int client_sock, char *fileName)
     fclose(f);
 }
 
+
+
+
 int main(int argc, char *argv[])
 {
     int SERVER_PORT;
@@ -86,55 +90,68 @@ int main(int argc, char *argv[])
         printf("\nError!Can not connect to sever! Client exit imediately! ");
         return 0;
     }
-    int choise, c;
+    int choise, c, check = 1;
     // Step 4: Communicate with server
     while (1)
     {
         printMenu();
+        choise = 0;
         scanf("%d", &choise);
-        printf("Choise: %d\n", choise);
+        if (check) // check for clear buffer
+            getchar();
+
         switch (choise)
         {
         case 1:
             while (1)
             {
-                // Cho phép người dùng nhập xâu bất kỳ từ bàn phím và gửi cho server
-
-                // Chức năng lặp lại cho tới khi người dung nhập xâu rỗng
-                printf("Enter string to send: ");
-                while ((c = getchar()) != '\n' && c != EOF)
-                {
-                }
+                printf("Nhap xau ky tu (Enter de ket thuc): ");
+                memset(buff, 0, BUFF_SIZE);
+                sendMessage(client_sock, "S", strlen("S"));
                 fgets(buff, BUFF_SIZE, stdin);
-                if (strlen(buff) == 1)
+                msg_len = strlen(buff);
+                if (buff[msg_len - 1] == '\n')
                 {
-                    break;
+                    buff[msg_len - 1] = '\0';
                 }
-                // Gửi xâu vừa nhập cho server
-                sendMessage(client_sock, buff, strlen(buff));
-                // Nhận xâu từ server
+
+                if (msg_len == 1)
+                {
+                    check = 0;
+                    sendMessage(client_sock, END1, strlen(END1));
+                    printf("Goodbye\n");
+                    break; // Thoát vòng lặp khi chuỗi rỗng được nhập
+                }
+
+                sendMessage(client_sock, buff, msg_len);
                 receiveMessage(client_sock, buff, BUFF_SIZE);
-                printf("Receive echo reply: %s\n", buff);
+                if (strcmp(buff, ERROR) == 0)
+                {
+                    printf("Error: Invalid String\n");
+                }
+                else
+                {
+                    printf("Reply from server: %s\n", buff);
+                }
             }
             break;
+
         case 2:
-            memset(buff, 0, BUFF_SIZE);
-            sendMessage(client_sock, "F", strlen("F"));
+            check = 0;
             while ((c = getchar()) != '\n' && c != EOF)
             {
             }
+            memset(buff, 0, BUFF_SIZE);
+            sendMessage(client_sock, "F", strlen("F"));
             sendFile(client_sock, FILENAME);
             printf("Send file success\n");
             break;
 
         default:
-            printf("Invalid choise\n");
+            printf("Invalid choice\n");
             break;
         }
-
-        // receive echo reply
     }
-
     // Step 4: Close socket
     close(client_sock);
     return 0;

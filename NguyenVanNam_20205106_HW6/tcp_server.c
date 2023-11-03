@@ -13,6 +13,7 @@
 #define FILE_IN "F"
 #define ERROR "Error Invalid String"
 #define FILENAME "receive.jpg"
+#define END1 "END1#"
 void receiveMessage(int client_sock, char *buff, int msg_len)
 {
     int bytes_received = recv(client_sock, buff, msg_len, 0);
@@ -167,6 +168,9 @@ int main(int argc, char *argv[])
                 receiveMessage(conn_sock, recv_data, BUFF_SIZE);
                 printf("Receive string: %s\n", recv_data);
                 // check if recv_data is contain a number or letter, if not, send error message
+                if(strcmp(recv_data, END1) == 0){
+                    continue;
+                }
                 if (!isValidString(recv_data))
                 {
                     sendMessage(conn_sock, ERROR, strlen(ERROR));
@@ -183,8 +187,9 @@ int main(int argc, char *argv[])
                     sendMessage(conn_sock, result, strlen(result));
                 }
             }
-            else if (strcmp(recv_data, "F") == 0)
+            else
             {
+                printf("Receive file\n");
                 // nhận nội dung lưu vào file receive.png, đến khi gặp kí tự 'E' thì dừng
                 FILE *f = fopen(FILENAME, "wb");
                 if (f == NULL)
@@ -205,10 +210,6 @@ int main(int argc, char *argv[])
                         break;
                     }
                 }
-            }
-            else
-            {
-                printf("Invalid request\n");
             }
             memset(recv_data, 0, BUFF_SIZE);
         }

@@ -7,7 +7,7 @@
 #include <string.h>
 #define ERROR "Error Invalid String"
 #define BUFF_SIZE 8192
-
+#define FILENAME "image.jpg"
 void printMenu()
 {
     printf("MENU\n");
@@ -24,6 +24,7 @@ void sendMessage(int client_sock, char *buff, int msg_len)
         printf("\nConnection closed!\n");
         return;
     }
+    // printf("Sent: %d\n", bytes_sent);
 }
 void receiveMessage(int client_sock, char *buff, int msg_len)
 {
@@ -38,7 +39,7 @@ void receiveMessage(int client_sock, char *buff, int msg_len)
 
 void sendFile(int client_sock, char *fileName)
 {
-    FILE *f = fopen(fileName, "r");
+    FILE *f = fopen(fileName, "rb");
     if (f == NULL)
     {
         printf("Error: File not found\n");
@@ -52,8 +53,6 @@ void sendFile(int client_sock, char *fileName)
         sendMessage(client_sock, file_data, bytesRead);
         memset(file_data, 0, BUFF_SIZE);
     }
-    sendMessage(client_sock, "E", strlen("E"));
-
     fclose(f);
 }
 
@@ -84,10 +83,10 @@ int main(int argc, char *argv[])
     // Step 3: Request to connect server
     if (connect(client_sock, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) < 0)
     {
-        printf("\nError!Can not connect to sever! Client exit imediately!\n");
-        exit(1);
+        printf("\nError!Can not connect to sever! Client exit imediately! ");
+        return 0;
     }
-    int choise;
+    int choise, c;
     // Step 4: Communicate with server
     while (1)
     {
@@ -97,42 +96,35 @@ int main(int argc, char *argv[])
         switch (choise)
         {
         case 1:
-            printf("Nhap xau ky tu: ");
-            memset(buff, 0, BUFF_SIZE);
-            int c;
-            sendMessage(client_sock, "S", strlen("S"));
-            while ((c = getchar()) != '\n' && c != EOF)
+            while (1)
             {
-            }
-            fgets(buff, BUFF_SIZE, stdin);
-            buff[strlen(buff) - 1] = '\0';
-            msg_len = strlen(buff);
+                // Cho phép người dùng nhập xâu bất kỳ từ bàn phím và gửi cho server
 
-            if (msg_len == 1)
-            {
-                printf("Bye\n");
-                exit(0);
+                // Chức năng lặp lại cho tới khi người dung nhập xâu rỗng
+                printf("Enter string to send: ");
+                while ((c = getchar()) != '\n' && c != EOF)
+                {
+                }
+                fgets(buff, BUFF_SIZE, stdin);
+                if (strlen(buff) == 1)
+                {
+                    break;
+                }
+                // Gửi xâu vừa nhập cho server
+                sendMessage(client_sock, buff, strlen(buff));
+                // Nhận xâu từ server
+                receiveMessage(client_sock, buff, BUFF_SIZE);
+                printf("Receive echo reply: %s\n", buff);
             }
-            sendMessage(client_sock, buff, msg_len);
-            receiveMessage(client_sock, buff, BUFF_SIZE);
-            if (strcmp(buff, ERROR) == 0)
-            {
-                printf("Error: Invalid String\n");
-                break;
-            }
-            printf("Repply from server: %s\n", buff);
-            memset(buff, 0, BUFF_SIZE);
             break;
         case 2:
-            printf("Nhap ten file: ");
             memset(buff, 0, BUFF_SIZE);
             sendMessage(client_sock, "F", strlen("F"));
             while ((c = getchar()) != '\n' && c != EOF)
             {
             }
-            fgets(buff, BUFF_SIZE, stdin);
-            buff[strlen(buff) - 1] = '\0';
-            sendFile(client_sock, buff);
+            sendFile(client_sock, FILENAME);
+            printf("Send file success\n");
             break;
 
         default:

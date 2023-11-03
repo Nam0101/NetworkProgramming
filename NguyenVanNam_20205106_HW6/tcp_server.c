@@ -7,11 +7,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <openssl/md5.h>
-#define BACKLOG 2 /* Number of allowed connections */
+#define BACKLOG 1 /* Number of allowed connections */
 #define BUFF_SIZE 8192
 #define STRING_IN "S"
 #define FILE_IN "F"
 #define ERROR "Error Invalid String"
+#define FILENAME "receive.jpg"
 void receiveMessage(int client_sock, char *buff, int msg_len)
 {
     int bytes_received = recv(client_sock, buff, msg_len, 0);
@@ -61,13 +62,18 @@ char *digitInMD5(char *str)
     return digit;
 }
 
+int isLetter(char c)
+{
+    return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
+}
+
 char *letterInMD5(char *str)
 {
     char *letter = (char *)malloc(BUFF_SIZE);
     int j = 0;
     for (int i = 0; i < strlen(str); i++)
     {
-        if ((str[i] >= 'a' && str[i] <= 'z') || (str[i] >= 'A' && str[i] <= 'Z'))
+        if (isLetter(str[i]))
         {
             letter[j] = str[i];
             j++;
@@ -76,13 +82,17 @@ char *letterInMD5(char *str)
     letter[j] = '\0';
     return letter;
 }
+int isValidChar(char c)
+{
+    return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == ' ');
+}
+
 int isValidString(char *str)
 {
     int i = 0;
     while (i < strlen(str))
     {
-        if ((str[i] >= 'a' && str[i] <= 'z') || (str[i] >= 'A' && str[i] <= 'Z') ||
-            (str[i] >= '0' && str[i] <= '9') || str[i] == ' ')
+        if (isValidChar(str[i]))
         {
             i++;
         }
@@ -136,7 +146,8 @@ int main(int argc, char *argv[])
     {
         // accept request
         sin_size = sizeof(struct sockaddr_in);
-        if(conn_sock = accept(listen_sock, (struct sockaddr *)&client, &sin_size) < 0){
+        if ((conn_sock = accept(listen_sock, (struct sockaddr *)&client, &sin_size)) < 0)
+        {
             perror("\nError: ");
             printf("Can't accept connection\n");
             return 0;
@@ -174,36 +185,34 @@ int main(int argc, char *argv[])
             }
             else if (strcmp(recv_data, "F") == 0)
             {
-                // nhận nội dung và in nội dung ra màn hình đến khi nhận được "E"
-                FILE *f = fopen("receive.png", "wb");
+                // nhận nội dung lưu vào file receive.png, đến khi gặp kí tự 'E' thì dừng
+                FILE *f = fopen(FILENAME, "wb");
                 if (f == NULL)
                 {
                     printf("Error: Can't open file\n");
                     return 0;
                 }
 
-                size_t totalBytesReceived = 0;
+                char *file_data = (char *)malloc(BUFF_SIZE);
+                size_t bytesReceived;
+                // mỗi lần sẽ nhận được BUFF_SIZE byte, nếu nhận được nhỏ hơn thì đã nhận hết file
                 while (1)
                 {
-                    receiveMessage(conn_sock, recv_data, BUFF_SIZE);
-                    // Write received data to the file
-                    if (strstr(recv_data, "E") != NULL)
+                    bytesReceived = recv(conn_sock, file_data, BUFF_SIZE, 0);
+                    fwrite(file_data, 1, bytesReceived, f);
+                    if (bytesReceived < BUFF_SIZE)
                     {
                         break;
                     }
-                    size_t bytesToWrite = strlen(recv_data);
-                    fwrite(recv_data, 1, bytesToWrite, f);
-                    totalBytesReceived += bytesToWrite;
-                    memset(recv_data, 0, BUFF_SIZE);
                 }
-
-                fclose(f);
-                printf("File received and saved as receive.png\n");
-
-            } // end conversation
-            close(conn_sock);
+            }
+            else
+            {
+                printf("Invalid request\n");
+            }
+            memset(recv_data, 0, BUFF_SIZE);
         }
-
+        close(conn_sock);
         close(listen_sock);
         return 0;
     }

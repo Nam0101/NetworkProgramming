@@ -14,6 +14,9 @@
 #define ERROR "Error Invalid String"
 #define FILENAME "receive.jpg"
 #define END1 "END1#"
+
+// receive message from client
+// input: client socket, message, message length
 void receiveMessage(int client_sock, char *buff, int msg_len)
 {
     int bytes_received = recv(client_sock, buff, msg_len, 0);
@@ -24,6 +27,8 @@ void receiveMessage(int client_sock, char *buff, int msg_len)
     }
     buff[bytes_received] = '\0';
 }
+// send message to client
+// input: client socket, message, message length
 void sendMessage(int client_sock, char *buff, int msg_len)
 {
     int bytes_sent = send(client_sock, buff, msg_len, 0);
@@ -34,7 +39,9 @@ void sendMessage(int client_sock, char *buff, int msg_len)
         return;
     }
 }
-
+// hashing string to md5
+// input: string
+// output: md5 string
 char *md5Hashing(char *str)
 {
     unsigned char digest[MD5_DIGEST_LENGTH];
@@ -47,6 +54,9 @@ char *md5Hashing(char *str)
         sprintf(&md5Hash[i * 2], "%02x", (unsigned int)digest[i]);
     return md5Hash;
 }
+// get digit in md5 string
+// input: md5 string
+// output: digit string
 char *digitInMD5(char *str)
 {
     char *digit = (char *)malloc(BUFF_SIZE);
@@ -63,11 +73,16 @@ char *digitInMD5(char *str)
     return digit;
 }
 
+// check if character is letter
+// input: character
+// output: 1 if character is letter, 0 if not
 int isLetter(char c)
 {
     return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
 }
-
+// get letter in md5 string
+// input: md5 string
+// output: letter string
 char *letterInMD5(char *str)
 {
     char *letter = (char *)malloc(BUFF_SIZE);
@@ -83,11 +98,17 @@ char *letterInMD5(char *str)
     letter[j] = '\0';
     return letter;
 }
+
+// check if character is valid
+// input: character
+// output: 1 if character is valid, 0 if not
 int isValidChar(char c)
 {
     return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == ' ');
 }
-
+// check if string is valid
+// input: string
+// output: 1 if string is valid, 0 if not
 int isValidString(char *str)
 {
     int i = 0;
@@ -162,21 +183,22 @@ int main(int argc, char *argv[])
         {
             // receives message from client
             receiveMessage(conn_sock, recv_data, BUFF_SIZE);
-            printf("Receive: %s\n", recv_data);
             if (strcmp(recv_data, "S") == 0)
             {
                 receiveMessage(conn_sock, recv_data, BUFF_SIZE);
                 printf("Receive string: %s\n", recv_data);
                 // check if recv_data is contain a number or letter, if not, send error message
-                if(strcmp(recv_data, END1) == 0){
+                if (strcmp(recv_data, END1) == 0)
+                {
                     continue;
                 }
-                if (!isValidString(recv_data))
+                if (!isValidString(recv_data)) // in case recv_data is not valid, send error message
                 {
                     sendMessage(conn_sock, ERROR, strlen(ERROR));
                 }
                 else
                 {
+                    // hashing recv_data to md5 and send to client
                     char *md5Hash = md5Hashing(recv_data);
                     char *digit = digitInMD5(md5Hash);
                     char *letter = letterInMD5(md5Hash);
@@ -190,7 +212,7 @@ int main(int argc, char *argv[])
             else
             {
                 printf("Receive file\n");
-                // nhận nội dung lưu vào file receive.png, đến khi gặp kí tự 'E' thì dừng
+                // default file name is receive.jpg and locate in the same folder with server.c
                 FILE *f = fopen(FILENAME, "wb");
                 if (f == NULL)
                 {
@@ -200,19 +222,24 @@ int main(int argc, char *argv[])
 
                 char *file_data = (char *)malloc(BUFF_SIZE);
                 size_t bytesReceived;
-                // mỗi lần sẽ nhận được BUFF_SIZE byte, nếu nhận được nhỏ hơn thì đã nhận hết file
+                // receive file from client and write to file
                 while (1)
                 {
                     bytesReceived = recv(conn_sock, file_data, BUFF_SIZE, 0);
                     fwrite(file_data, 1, bytesReceived, f);
+                    // File is devide to parts, each part is BUFF_SIZE bytes
+                    // last part is less than BUFF_SIZE bytes
                     if (bytesReceived < BUFF_SIZE)
                     {
+                        // file is received
                         break;
                     }
                 }
+                fclose(f);
             }
             memset(recv_data, 0, BUFF_SIZE);
         }
+        // close connection
         close(conn_sock);
         close(listen_sock);
         return 0;

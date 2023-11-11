@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
     server_addr.sin_addr.s_addr = inet_addr(SERVER_ADDR);
 
     // Step 3: Request to connect server
+    printf("Connecting to server %s:%d\n", SERVER_ADDR, SERVER_PORT);
     if (connect(client_sock, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) < 0)
     {
         printf("\nError!Can not connect to sever! Client exit imediately! ");

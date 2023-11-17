@@ -140,7 +140,7 @@ int passwordWrong(int client_sockfd, char *userName, node_t *logedInAccount)
                 char *message = "OK";
                 logedInAccount = account;
                 send(client_sockfd, message, strlen(message), 0);
-                return;
+                return isLogin;
             }
             char *message = "account not ready";
             send(client_sockfd, message, strlen(message), 0);
@@ -173,32 +173,46 @@ void handle_client(socklen_t client_sockfd)
     // handle client's requests here
     char *message = (char *)malloc(MAX_BUFFER_SIZE);
     printf("Client connected\n");
-    char *userName = (char *)malloc(100);
-    char *password = (char *)malloc(100);
-    recvice_message(client_sockfd, userName);
-    recvice_message(client_sockfd, password);
+    char *userName = (char *)malloc(MAX_BUFFER_SIZE);
+    char *password = (char *)malloc(MAX_BUFFER_SIZE);
+    recvice_message(client_sockfd, message);
+    strcpy(userName, message);
+    recvice_message(client_sockfd, message);
+    strcpy(password, message);
     printf("Username: %s\n", userName);
     printf("Password: %s\n", password);
+    node_t *cur = list->head;
+    while (cur != NULL)
+    {
+        printf("debug:%s %s %hd\n", cur->userName, cur->password, cur->status);
+        cur = cur->next;
+    }
     int isFound = 0;
     node_t *account = findInList(list, userName, password, &isFound);
     if (isFound)
     {
         if (account->status == BLOCKED)
         {
-            send(client_sockfd, "block account", strlen("block account"), 0);
+            send(client_sockfd, "blocked account", strlen("blocked account"), 0);
+            return;
+        }
+        else if (account->status == LOGIN)
+        {
+            send(client_sockfd, "account is already loged in", strlen("account is already loged in"), 0);
             return;
         }
         send(client_sockfd, "OK", strlen("OK"), 0);
-        // account in list status is login
         account->status = LOGIN;
-        writeFile(list, dataFileName);
-        readFile(list, dataFileName);
+        node_t *cur = list->head;
+        while (cur != NULL)
+        {
+            printf("debug:%s %s %hd\n", cur->userName, cur->password, cur->status);
+            cur = cur->next;
+        }
         recvice_message(client_sockfd, message);
         if (strcmp(message, "bye") == 0)
         {
             account->status = ACTIVE;
-            writeFile(list, dataFileName);
-            readFile(list, dataFileName);
             fclose(client_sockfd);
             return;
         }
@@ -256,17 +270,16 @@ int main(int argc, char *argv[])
         }
         else if (pid == 0)
         {
-            // child process
             close(sockfd);
             handle_client(client_sockfd);
             exit(0);
         }
         else
         {
-            // parent process
             close(client_sockfd);
         }
     }
+    close(sockfd);
 
     return 0;
 }

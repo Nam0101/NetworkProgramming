@@ -7,12 +7,23 @@
 #include <openssl/sha.h>
 #include <pthread.h>
 
-#define MAX_BUFFER_SIZE 100000
+#define MAX_BUFFER_SIZE 4096
 int isLogin = 0;
 // socket file descriptor
 int sockfd;
 // server address
 struct sockaddr_in server_addr;
+
+void sendMessage(int sockfd, char *message)
+{
+    int bytesent = send(sockfd, message, strlen(message), 0);
+    if (bytesent < 0)
+    {
+        perror("Error: ");
+        close(sockfd);
+        exit(1);
+    }
+}
 
 // login to server, send username and password to server
 // if username and password is correct, server will send "OK" to client
@@ -27,19 +38,13 @@ void login()
     // bo \n
     message[strlen(message) - 1] = '\0';
 
-    int bytesent = send(sockfd, message, strlen(message), 0);
-    if (bytesent < 0)
-    {
-        perror("Error: ");
-        close(sockfd);
-        exit(1);
-    }
+    sendMessage(sockfd, message);
     memset(message, 0, sizeof(message));
     printf("Insert Password:\n");
     fgets(message, sizeof(message), stdin);
     // bo \n
     message[strlen(message) - 1] = '\0';
-    send(sockfd, message, strlen(message), 0);
+    sendMessage(sockfd, message);
     memset(message, 0, sizeof(message));
     recv(sockfd, message, sizeof(message), 0);
     printf("%s\n", message);

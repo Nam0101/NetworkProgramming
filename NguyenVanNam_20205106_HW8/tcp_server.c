@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include "node.h"
 int PORT;
 #define ACTIVE 1
@@ -16,7 +16,9 @@ int PORT;
 #define MAX_BUFFER_SIZE 4096
 const char *dataFileName = "account.txt";
 list_t *list;
-int notifiy_pipe[2];
+// mutex
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 // create a TCP socket
 int create_socket()
 {
@@ -81,19 +83,17 @@ void writeFile(list_t *list, const char *fileName)
         printf("Cannot open %s file!\n", fileName);
         exit(1);
     }
-    //
     node_t *cur = list->head;
     while (cur != NULL)
     {
         fprintf(fp, "%s %s %hd\n", cur->userName, cur->password, cur->status);
         cur = cur->next;
     }
-    fflush(fp); // Flush the buffer
     fclose(fp);
 }
 
 // return node_t that has userName and password
-node_t *findInList(char *userName, char *password, int *isFound)
+node_t *findInList(list_t *list, char *userName, char *password, int *isFound)
 {
     node_t *cur = list->head;
     while (cur != NULL)
@@ -120,17 +120,9 @@ node_t *findByUserName(list_t *list, char *userName)
     }
     return NULL;
 }
-void notify_clients(char *username)
+
+void passwordWrong(int client_sockfd, char *userName, node_t *logedInAccount)
 {
-    // notify to othor process when a client login
-    char *message = (char *)malloc(MAX_BUFFER_SIZE);
-    strcpy(message, username);
-    write(notifiy_pipe[1], message, strlen(message));
-}
-int passwordWrong(int client_sockfd, char *userName, node_t *logedInAccount)
-{
-    readFile(list, dataFileName);
-    int isLogin = 0;
     char *message = "not OK";
     int isFound = 0;
     send(client_sockfd, message, strlen(message), 0);
@@ -142,16 +134,15 @@ int passwordWrong(int client_sockfd, char *userName, node_t *logedInAccount)
     {
         char *buffer = (char *)malloc(MAX_BUFFER_SIZE);
         recv(client_sockfd, buffer, MAX_BUFFER_SIZE, 0);
-        node_t *account = findInList(userName, buffer, &isFound);
+        node_t *account = findInList(list, userName, buffer, &isFound);
         if (isFound)
         {
             if (account->status == ACTIVE)
             {
-                isLogin = 1;
                 char *message = "OK";
                 logedInAccount = account;
                 send(client_sockfd, message, strlen(message), 0);
-                return isLogin;
+                return;
             }
             char *message = "account not ready";
             send(client_sockfd, message, strlen(message), 0);
@@ -172,60 +163,89 @@ int passwordWrong(int client_sockfd, char *userName, node_t *logedInAccount)
         if (account != NULL)
         {
             account->status = BLOCKED;
+            pthread_mutex_lock(&mutex);
             writeFile(list, dataFileName);
             readFile(list, dataFileName);
+            pthread_mutex_unlock(&mutex);
         }
     }
-    return isLogin;
+    printf("Client closed connection\n");
+    return;
 }
 // handle client
-void handle_client(socklen_t client_sockfd)
+void *handle_client(void *arg)
 {
     // handle client's requests here
-    readFile(list, dataFileName);
+    int client_sockfd = *(int *)arg;
     char *message = (char *)malloc(MAX_BUFFER_SIZE);
     printf("Client connected\n");
-    char *userName = (char *)malloc(MAX_BUFFER_SIZE);
-    char *password = (char *)malloc(MAX_BUFFER_SIZE);
-    recvice_message(client_sockfd, message);
-    strcpy(userName, message);
-    recvice_message(client_sockfd, message);
-    strcpy(password, message);
+    char *userName = (char *)malloc(100);
+    char *password = (char *)malloc(100);
+    recvice_message(client_sockfd, userName);
+    recvice_message(client_sockfd, password);
     printf("Username: %s\n", userName);
     printf("Password: %s\n", password);
     int isFound = 0;
-    node_t *account = findInList(userName, password, &isFound);
-    if (isFound)
+    // create new list to read data from file
+    list_t *new_list = createList();
+    // lock
+    if (pthread_mutex_trylock(&mutex) == 0)
     {
-        if (account->status == BLOCKED)
-        {
-            send(client_sockfd, "blocked account", strlen("blocked account"), 0);
-            return;
-        }
-        else if (account->status == LOGIN)
-        {
-            printf("account is already loged in\n");
-            send(client_sockfd, "account is already loged in", strlen("account is already loged in"), 0);
-            return;
-        }
-        send(client_sockfd, "OK", strlen("OK"), 0);
-        account->status = LOGIN;
-        writeFile(list, dataFileName); // Write the login status to the file
-        notify_clients(userName);
-        recvice_message(client_sockfd, message);
-        if (strcmp(message, "bye") == 0)
-        {
-            account->status = ACTIVE;
-            writeFile(list, dataFileName); // Write the logout status to the file
-            fclose(client_sockfd);
-            return;
-        }
+        readFile(new_list, dataFileName);
+        pthread_mutex_unlock(&mutex);
     }
     else
     {
-        int isLogin = passwordWrong(client_sockfd, userName, account);
-        printf("isLogin: %d\n", isLogin);
+        printf("Cannot lock mutex\n");
     }
+
+    // unlock
+    node_t *account = findInList(new_list, userName, password, &isFound);
+    if (isFound)
+    {
+        // case of status
+        if (account->status == BLOCKED)
+        {
+            send(client_sockfd, "block account", strlen("block account"), 0);
+            return NULL;
+        }
+        else if (account->status == LOGIN)
+        {
+            char *message = "AALG";
+            send(client_sockfd, message, strlen(message), 0);
+            return NULL;
+        }
+        send(client_sockfd, "OK", strlen("OK"), 0);
+        // account in list status is login
+        account->status = LOGIN;
+        // lock
+        pthread_mutex_lock(&mutex);
+        writeFile(new_list, dataFileName);
+        // unlock
+        pthread_mutex_unlock(&mutex);
+        recvice_message(client_sockfd, message);
+        account->status = ACTIVE;
+        pthread_mutex_lock(&mutex);
+        writeFile(new_list, dataFileName);
+        pthread_mutex_unlock(&mutex);
+        printf("Client closed connection\n");
+        close(client_sockfd);
+        return NULL;
+    }
+    else
+    {
+        // handle when wrong password
+        passwordWrong(client_sockfd, userName, account);
+    }
+    free(message);
+    free(userName);
+    free(password);
+    // destroy list
+    free(new_list);
+    free(account);
+    // destroy thread
+    pthread_detach(pthread_self());
+    return NULL;
 }
 int main(int argc, char *argv[])
 {
@@ -257,71 +277,18 @@ int main(int argc, char *argv[])
         printf("%s %s %hd\n", cur->userName, cur->password, cur->status);
         cur = cur->next;
     }
-
-    // Create a pipe for IPC
-    if (pipe(notifiy_pipe) == -1)
+    while (1)
     {
-        perror("Error creating pipe");
-        exit(1);
-    }
-
-    // Fork a new process
-    pid_t pid = fork();
-    if (pid < 0)
-    {
-        perror("Error forking");
-        exit(1);
-    }
-    else if (pid == 0)
-    {
-        // In the child process, close the write end of the pipe
-        close(notifiy_pipe[1]);
-
-        // Enter a loop where it reads from the pipe and handles the notification
-        char *message = (char *)malloc(MAX_BUFFER_SIZE);
-        while (1)
+        socklen_t client_sockfd = accept(sockfd, (struct sockaddr *)&client_addr, &client_addr_len);
+        if (client_sockfd < 0)
         {
-            read(notifiy_pipe[0], message, MAX_BUFFER_SIZE);
-            printf("User %s has logged in\n", message);
+            perror("Error accepting connection");
+            continue;
         }
-        free(message);
-        exit(0);
+
+        pthread_t tid;
+        pthread_create(&tid, NULL, handle_client, &client_sockfd);
     }
-    else
-    {
-        // In the parent process, close the read end of the pipe
-        close(notifiy_pipe[0]);
-
-        // Enter the main server loop
-        while (1)
-        {
-            socklen_t client_sockfd = accept(sockfd, (struct sockaddr *)&client_addr, &client_addr_len);
-            if (client_sockfd < 0)
-            {
-                perror("Error accepting connection");
-                continue;
-            }
-
-            pid_t pid = fork();
-            if (pid < 0)
-            {
-                perror("Error forking");
-                exit(1);
-            }
-            else if (pid == 0)
-            {
-                close(sockfd);
-                handle_client(client_sockfd);
-                exit(0);
-            }
-            else
-            {
-                close(client_sockfd);
-            }
-        }
-    }
-
-    close(sockfd);
 
     return 0;
 }

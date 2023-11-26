@@ -1,0 +1,4 @@
+hedpsi hedpsi 1
+hust hust 0
+Nam Nam 0
+test test 1

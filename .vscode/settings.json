@@ -49,6 +49,8 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "cinttypes": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "types.h": "c",
+        "acccount_node.h": "c"
     }
 }

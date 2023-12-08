@@ -51,6 +51,8 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "types.h": "c",
-        "acccount_node.h": "c"
+        "acccount_node.h": "c",
+        "stdio.h": "c",
+        "aes.h": "c"
     }
 }

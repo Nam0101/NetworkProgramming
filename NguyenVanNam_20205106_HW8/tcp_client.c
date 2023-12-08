@@ -6,7 +6,7 @@
 #include <openssl/md5.h>
 #include <openssl/sha.h>
 #include <pthread.h>
-
+#define AESKEY "20205106"
 #define MAX_BUFFER_SIZE 4096
 int isLogin = 0;
 // socket file descriptor

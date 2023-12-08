@@ -15,7 +15,9 @@ pthread_mutex_t c_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int client_sockets[MAX_CLIENTS];
 int num_clients = 0;
-
+/// @brief decrypt_message function to decrypt message from AES
+/// @param encrypted_input : encrypted message
+/// @param decrypted_output : decrypted message
 void decrypt_message(const char *encrypted_input, char **decrypted_output)
 {
     AES_KEY aes;
@@ -47,7 +49,9 @@ void decrypt_message(const char *encrypted_input, char **decrypted_output)
     (*decrypted_output)[unpadded_length] = '\0';
     free(decrypted_buffer);
 }
-
+/// @brief encrypt_message to encrypt message from AES
+/// @param input message
+/// @return encrypted message
 char *encrypt_message(const char *input)
 {
     AES_KEY aes;

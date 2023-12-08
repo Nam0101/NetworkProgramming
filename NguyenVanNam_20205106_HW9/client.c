@@ -14,7 +14,9 @@ struct sockaddr_in server_addr;
 void *sendMessage(void *arg);
 void *getMessage(void *arg);
 char *name;
-// AES
+/// @brief decrypt_message function to decrypt message from AES
+/// @param encrypted_input : encrypted message
+/// @param decrypted_output : decrypted message
 void decrypt_message(const char *encrypted_input, char **decrypted_output)
 {
     AES_KEY aes;
@@ -48,6 +50,10 @@ void decrypt_message(const char *encrypted_input, char **decrypted_output)
     (*decrypted_output)[unpadded_length] = '\0';
     free(decrypted_buffer);
 }
+
+/// @brief encrypt_message to encrypt message from AES
+/// @param input message
+/// @return encrypted message
 char *encrypt_message(const char *input)
 {
     AES_KEY aes;
@@ -83,6 +89,10 @@ char *encrypt_message(const char *input)
 
     return (char *)encrypted_buffer;
 }
+
+/// @brief sendMessage function to send message to server
+/// @param arg  None
+/// @return Void
 void *sendMessage(void *arg)
 {
     char *message = (char *)malloc(MAX_BUFFER_SIZE);
@@ -108,7 +118,9 @@ void *sendMessage(void *arg)
     }
     return NULL;
 }
-
+/// @brief getMessage function to receive message from server
+/// @param arg None
+/// @return Void
 void *getMessage(void *arg)
 {
     char *message = (char *)malloc(MAX_BUFFER_SIZE);
@@ -182,6 +194,8 @@ int main(int argc, char *argv[])
     strcpy(name, message);
     printf("Welcome %s\n", name);
     pthread_t send_thread, recv_thread;
+
+    // Create threads to send and receive messages
     pthread_create(&send_thread, NULL, sendMessage, NULL);
     pthread_create(&recv_thread, NULL, getMessage, NULL);
     pthread_join(send_thread, NULL);

@@ -53,6 +53,7 @@
         "types.h": "c",
         "acccount_node.h": "c",
         "stdio.h": "c",
-        "aes.h": "c"
+        "aes.h": "c",
+        "select.h": "c"
     }
 }
